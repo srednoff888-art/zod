@@ -3122,6 +3122,34 @@ const user = await idToUser.parse("abc123");
   If you use async transforms, you must use a `.parseAsync` or `.safeParseAsync` when parsing data! Otherwise Zod will throw an error.
 </Callout>
 
+### `.overwrite()`
+
+Use `.overwrite()` for a transform that returns a value of the same type. Unlike `.transform()`, it doesn't change the inferred type, and it returns an instance of the original schema class, so you can keep chaining its methods.
+
+<Tabs groupId="lib" items={["Zod", "Zod Mini"]}>
+<Tab value="Zod">
+```ts
+const rounded = z.number().overwrite((val) => Math.round(val)).max(100);
+
+rounded.parse(99.6); // => 100
+rounded.parse(100.4); // => 100
+rounded.parse(100.6); // ❌ throws: Too big
+```
+</Tab>
+<Tab value="Zod Mini">
+```ts
+const rounded = z.number().check(
+  z.overwrite((val) => Math.round(val)),
+  z.maximum(100)
+);
+```
+</Tab>
+</Tabs>
+
+The overwrite function is stored as a check, so it runs in order with the schema's other checks: checks before it see the original value, and checks after it see the new one. In the example above, `.max(100)` checks the rounded number. The built-in `.trim()`, `.toLowerCase()`, `.toUpperCase()` and `.normalize()` string methods are implemented with `.overwrite()`.
+
+Because it keeps the type, `.overwrite()` also runs when [encoding](#codecs), where a `.transform()` throws.
+
 ### `.preprocess()` 
 
 Piping a transform into another schema is another common pattern, so Zod provides a convenience `z.preprocess()` function.
